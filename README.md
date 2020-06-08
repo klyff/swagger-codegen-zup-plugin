@@ -42,6 +42,7 @@ mvn clean compile
 - `output` - target output path (default is `${project.build.directory}/generated-sources/swagger`)
 - `templateDirectory` - directory with mustache templates
 - `templateReplacingList` - List of exclusive files you want to use as a mustache template replacement without worrying about the entire template directory
+- `templateEngineTarget` - The name of Template Engine to Work on, e.g.: JavaSpring - also is knowed as Handlebars at Swagger-Codegen-Generatores, you can check all available at https://github.com/swagger-api/swagger-codegen-generators/tree/master/src/main/java/io/swagger/codegen/v3/generators/handlebars. JavaSpring is the default value for our pourpose 
 - `addCompileSourceRoot` - add the output directory to the project as a source root (`true` by default)
 - `modelPackage` - the package to use for generated model objects/classes
 - `apiPackage` - the package to use for generated api objects/classes
@@ -87,7 +88,7 @@ Specifying a custom generator is a bit different. It doesn't support the classpa
                 <modelPackage>${default.package}.model</modelPackage>
                 <invokerPackage>${default.package}.handler</invokerPackage>
 
-
+                <templateEngineTarget>JavaSpring</templateEngineTarget>
                 <templateReplacingList>
                     <api.mustache>~/mytemplates/source/api.mustache</api.mustache>
                     <module.mustache>~/mytemplates/source/module.mustache</module.mustache>

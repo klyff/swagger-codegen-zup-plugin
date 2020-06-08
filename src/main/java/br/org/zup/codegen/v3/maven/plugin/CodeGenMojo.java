@@ -1,13 +1,13 @@
-package io.swagger.codegen.v3.maven.plugin;
+package br.org.zup.codegen.v3.maven.plugin;
 
 /*
  * Copyright 2001-2005 The Apache Software Foundation.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software distributed under the License
  * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
  * or implied. See the License for the specific language governing permissions and limitations under
@@ -28,15 +28,17 @@ import static io.swagger.codegen.v3.config.CodegenConfiguratorUtils.applyTypeMap
 import static io.swagger.codegen.v3.config.CodegenConfiguratorUtils.applyReservedWordsMappingsKvpList;
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.io.*;
+import java.net.URI;
+import java.net.URL;
+import java.nio.file.*;
 import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.PosixFileAttributes;
 import java.util.*;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
 import java.util.regex.Pattern;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -61,7 +63,7 @@ import io.swagger.codegen.v3.config.CodegenConfigurator;
 @Mojo(name = "generate", defaultPhase = LifecyclePhase.GENERATE_SOURCES)
 public class CodeGenMojo extends AbstractMojo {
 
-    @Parameter(name = "verbose", required = false, defaultValue = "false")
+    @Parameter(name = "verbose", required = false, defaultValue = "true")
     private boolean verbose;
 
     /**
@@ -105,9 +107,13 @@ public class CodeGenMojo extends AbstractMojo {
      * List of Templates to Replace.
      */
     @Parameter(name = "templateReplacingList")
-    private List<String> templateReplacingList;
+    private Map<?, ?> templateReplacingList;
 
-    private Map<String, String> templateReplacingMap;
+    /**
+     * The Template Target
+     */
+    @Parameter(name = "templateEngineTarget", defaultValue = "JavaSpring")
+    private String templateEngineTarget;
 
     /**
      * Adds authorization headers when fetching the swagger definitions remotely. " Pass in a
@@ -234,7 +240,7 @@ public class CodeGenMojo extends AbstractMojo {
      * A map of reserved names and how they should be escaped
      */
     @Parameter(name = "reservedWordsMappings")
-    private List<String> reservedWordsMappings;    
+    private List<String> reservedWordsMappings;
 
     /**
      * Generate the apis
@@ -323,7 +329,6 @@ public class CodeGenMojo extends AbstractMojo {
      */
     @Parameter(readonly = true, required = true, defaultValue = "${project}")
     private MavenProject project;
-
 
 
     @Override
@@ -443,7 +448,7 @@ public class CodeGenMojo extends AbstractMojo {
 
         // do not override config if already present (e.g. config read from file)
         addCodegenArgumentIfAbsent(CodegenConstants.MODEL_TESTS_OPTION, "boolean", generateModelTests.toString(), configurator);
-        addCodegenArgumentIfAbsent(CodegenConstants.API_TESTS_OPTION , "boolean", generateApiTests.toString(), configurator);
+        addCodegenArgumentIfAbsent(CodegenConstants.API_TESTS_OPTION, "boolean", generateApiTests.toString(), configurator);
         addCodegenArgumentIfAbsent(CodegenConstants.MODEL_DOCS_OPTION, "boolean", generateModelDocumentation.toString(), configurator);
         addCodegenArgumentIfAbsent(CodegenConstants.API_DOCS_OPTION, "boolean", generateApiDocumentation.toString(), configurator);
 
@@ -599,7 +604,7 @@ public class CodeGenMojo extends AbstractMojo {
     }
 
     private void addCodegenArgumentIfAbsent(String option, String type, String value, CodegenConfigurator configurator) {
-         if (configurator.getCodegenArguments().stream()
+        if (configurator.getCodegenArguments().stream()
                 .noneMatch(codegenArgument -> option.equals(codegenArgument.getOption()))) {
             configurator.getCodegenArguments().add(new CodegenArgument().option(option).type(type).value(value));
         }
@@ -607,47 +612,65 @@ public class CodeGenMojo extends AbstractMojo {
 
     private void processTemplateReplacingFilesList() throws MojoExecutionException {
         try {
-            if (null != this.templateDirectory && null != templateReplacingList && !templateReplacingList.isEmpty()) {
+            if (null != templateReplacingList && !templateReplacingList.isEmpty()) {
 
                 System.out.println("\n\nProcessing Template Directory and Replacing Templates List");
+                templateReplacingList.forEach((k, v) -> System.out.println("key: " + k + " value:" + v));
 
-                templateReplacingMap = templateReplacingList.stream()
-                        .collect(Collectors.toMap(k -> k.split("=")[0].trim(), v -> v.split("=")[1].trim()));
+                String prefixTempDirectory = "ZUP_" + templateEngineTarget + "_" + Long.valueOf(System.currentTimeMillis()).toString().substring(10);
+                Path tempDirectoryTemplatesWork = Files.createTempDirectory(prefixTempDirectory);
+                System.out.println("Temp Directory: " + tempDirectoryTemplatesWork.toString());
 
-                String prefixTempDirectory = Long.valueOf(System.currentTimeMillis()).toString();
+                File sourceDirTemplatesFile = templateDirectory;
 
-                Path tempDirWithPrefix = Files.createTempDirectory(prefixTempDirectory);
+                if (null == sourceDirTemplatesFile || !sourceDirTemplatesFile.exists() || !sourceDirTemplatesFile.isDirectory()) {
 
-                System.out.println("Temp Directory: " + tempDirWithPrefix.toString());
+                    String resourceURI = Thread.currentThread().getContextClassLoader().getResource("templates/").toURI().toString();
 
-                /*Copy entire templatesDirectory to TempTemplateDirectory*/
-                try (Stream<Path> stream = Files.walk(templateDirectory.toPath())) {
-                    stream.forEachOrdered(sourcePath -> {
-                        try {
-                            Files.copy(sourcePath, templateDirectory.toPath().resolve(tempDirWithPrefix.relativize(sourcePath)));
-                        } catch (IOException e) {
-                            throw new UncheckedIOException("Error to copy Files to Temp Direcotry", e);
+                    String resourceJarPath = resourceURI.substring(resourceURI.lastIndexOf(":") + 1, resourceURI.lastIndexOf("!"));
+
+                    JarFile jar = new java.util.jar.JarFile(resourceJarPath);
+                    Enumeration enumEntries = jar.entries();
+                    while (enumEntries.hasMoreElements()) {
+                        JarEntry file = (java.util.jar.JarEntry) enumEntries.nextElement();
+                        if (file.getName().contains("MANIFEST.MF") || file.getName().contains("META-INF")) {
+                            continue;
                         }
-                    });
+                        File fileJarOutput = new File(tempDirectoryTemplatesWork.toString() + File.separator + file.getName());
+                        if (file.isDirectory()) {
+                            fileJarOutput.mkdir();
+                            continue;
+                        }
+                        InputStream is = jar.getInputStream(file);
+                        FileOutputStream fos = new FileOutputStream(fileJarOutput);
+                        while (is.available() > 0) {
+                            fos.write(is.read());
+                        }
+                        fos.close();
+                        is.close();
+                    }
+                    jar.close();
                 }
 
                 /* Replace files defined at templateReplacingList */
-                for(String source : templateReplacingMap.keySet()){
-                    String dest = templateReplacingMap.get(templateReplacingMap);
-
-                    try (Stream<String> stream = templateReplacingMap.keySet().stream()) {
-                        stream.forEachOrdered(sourcePath -> {
-
+                templateReplacingList.forEach((k, v) -> {
+                    try (Stream<Path> stream = Files.walk(Paths.get(tempDirectoryTemplatesWork.toString() + File.separator + "templates" + File.separator + templateEngineTarget))) {
+                        stream.filter(sourcePath -> sourcePath.getFileName().toString().equals(k)).collect(Collectors.toList()).forEach(pathDest -> {
+                            try {
+                                Files.copy(Paths.get(v.toString()), pathDest, StandardCopyOption.REPLACE_EXISTING);
+                            } catch (IOException e) {
+                                throw new UncheckedIOException(e);
+                            }
                         });
+                    } catch (IOException e) {
+                        throw new UncheckedIOException(e);
                     }
-                }
-
-
+                });
                 //Apply tempDirWithPrefix to templateDirectory
-                this.templateDirectory = tempDirWithPrefix.toFile();
+                this.templateDirectory = tempDirectoryTemplatesWork.toFile();
             }
-        } catch (Exception e){
-            throw new MojoExecutionException("Error to copy Files to Temp Direcotry",e);
+        } catch (Exception e) {
+            throw new MojoExecutionException("Error to copy Files to Temp Direcotry", e);
         }
     }
 }
