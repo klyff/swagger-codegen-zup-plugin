@@ -8,6 +8,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
+    <groupId>br.zup.codegen.v3</groupId>
     <artifactId>swagger-codegen-zup-plugin</artifactId>
     <name>swagger-codegen (Fork from maven-plugin maid for Zup)</name>
     <packaging>maven-plugin</packaging>
