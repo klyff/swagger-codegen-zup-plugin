@@ -63,7 +63,7 @@ import io.swagger.codegen.v3.config.CodegenConfigurator;
 @Mojo(name = "generate", defaultPhase = LifecyclePhase.GENERATE_SOURCES)
 public class CodeGenMojo extends AbstractMojo {
 
-    @Parameter(name = "verbose", required = false, defaultValue = "true")
+    @Parameter(name = "verbose", required = false, defaultValue = "false")
     private boolean verbose;
 
     /**
@@ -667,10 +667,10 @@ public class CodeGenMojo extends AbstractMojo {
                     }
                 });
                 //Apply tempDirWithPrefix to templateDirectory
-                this.templateDirectory = tempDirectoryTemplatesWork.toFile();
+                this.templateDirectory = new File(tempDirectoryTemplatesWork.toString() + File.separator + "templates" + File.separator + templateEngineTarget);
             }
         } catch (Exception e) {
-            throw new MojoExecutionException("Error to copy Files to Temp Direcotry", e);
+            throw new MojoExecutionException("Error while coping Files to Temp Directory", e);
         }
     }
 }
