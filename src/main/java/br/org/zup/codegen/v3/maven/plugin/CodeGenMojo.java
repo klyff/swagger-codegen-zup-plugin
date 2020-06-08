@@ -621,11 +621,7 @@ public class CodeGenMojo extends AbstractMojo {
                 Path tempDirectoryTemplatesWork = Files.createTempDirectory(prefixTempDirectory);
                 System.out.println("Temp Directory: " + tempDirectoryTemplatesWork.toString());
 
-                if (null == templateDirectory || !<plugin>
-				<groupId>br.zup.codegen.v3</groupId>
-				<artifactId>swagger-codegen-zup-plugin</artifactId>
-				<version>3.0.21-SNAPSHOT</version>
-				<executions>.exists() || !templateDirectory.isDirectory()) {
+                if (null == templateDirectory || !templateDirectory.exists() || !templateDirectory.isDirectory()) {
 
                     String resourceURI = Thread.currentThread().getContextClassLoader().getResource("templates/").toURI().toString();
 
