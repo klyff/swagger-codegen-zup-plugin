@@ -621,9 +621,11 @@ public class CodeGenMojo extends AbstractMojo {
                 Path tempDirectoryTemplatesWork = Files.createTempDirectory(prefixTempDirectory);
                 System.out.println("Temp Directory: " + tempDirectoryTemplatesWork.toString());
 
-                File sourceDirTemplatesFile = templateDirectory;
-
-                if (null == sourceDirTemplatesFile || !sourceDirTemplatesFile.exists() || !sourceDirTemplatesFile.isDirectory()) {
+                if (null == templateDirectory || !<plugin>
+				<groupId>br.zup.codegen.v3</groupId>
+				<artifactId>swagger-codegen-zup-plugin</artifactId>
+				<version>3.0.21-SNAPSHOT</version>
+				<executions>.exists() || !templateDirectory.isDirectory()) {
 
                     String resourceURI = Thread.currentThread().getContextClassLoader().getResource("templates/").toURI().toString();
 
@@ -650,6 +652,17 @@ public class CodeGenMojo extends AbstractMojo {
                         is.close();
                     }
                     jar.close();
+
+                } else {
+                    try (Stream<Path> stream = Files.walk(templateDirectory.toPath())) {
+                        stream.forEachOrdered(sourcePath -> {
+                            try {
+                                Files.copy(sourcePath,templateDirectory.toPath().resolve(tempDirectoryTemplatesWork.relativize(sourcePath)));
+                            } catch (IOException e) {
+                                throw new UncheckedIOException(e);
+                            }
+                        });
+                    }
                 }
 
                 /* Replace files defined at templateReplacingList */
