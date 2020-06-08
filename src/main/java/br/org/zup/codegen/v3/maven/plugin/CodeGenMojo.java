@@ -63,7 +63,7 @@ import io.swagger.codegen.v3.config.CodegenConfigurator;
 @Mojo(name = "generate", defaultPhase = LifecyclePhase.GENERATE_SOURCES)
 public class CodeGenMojo extends AbstractMojo {
 
-    @Parameter(name = "verbose", required = false, defaultValue = "true")
+    @Parameter(name = "verbose", required = false, defaultValue = "false")
     private boolean verbose;
 
     /**
@@ -621,9 +621,7 @@ public class CodeGenMojo extends AbstractMojo {
                 Path tempDirectoryTemplatesWork = Files.createTempDirectory(prefixTempDirectory);
                 System.out.println("Temp Directory: " + tempDirectoryTemplatesWork.toString());
 
-                File sourceDirTemplatesFile = templateDirectory;
-
-                if (null == sourceDirTemplatesFile || !sourceDirTemplatesFile.exists() || !sourceDirTemplatesFile.isDirectory()) {
+                if (null == templateDirectory || !templateDirectory.exists() || !templateDirectory.isDirectory()) {
 
                     String resourceURI = Thread.currentThread().getContextClassLoader().getResource("templates/").toURI().toString();
 
@@ -650,6 +648,17 @@ public class CodeGenMojo extends AbstractMojo {
                         is.close();
                     }
                     jar.close();
+
+                } else {
+                    try (Stream<Path> stream = Files.walk(templateDirectory.toPath())) {
+                        stream.forEachOrdered(sourcePath -> {
+                            try {
+                                Files.copy(sourcePath,templateDirectory.toPath().resolve(tempDirectoryTemplatesWork.relativize(sourcePath)));
+                            } catch (IOException e) {
+                                throw new UncheckedIOException(e);
+                            }
+                        });
+                    }
                 }
 
                 /* Replace files defined at templateReplacingList */
@@ -667,10 +676,10 @@ public class CodeGenMojo extends AbstractMojo {
                     }
                 });
                 //Apply tempDirWithPrefix to templateDirectory
-                this.templateDirectory = tempDirectoryTemplatesWork.toFile();
+                this.templateDirectory = new File(tempDirectoryTemplatesWork.toString() + File.separator + "templates" + File.separator + templateEngineTarget);
             }
         } catch (Exception e) {
-            throw new MojoExecutionException("Error to copy Files to Temp Direcotry", e);
+            throw new MojoExecutionException("Error while coping Files to Temp Directory", e);
         }
     }
 }

@@ -10,9 +10,9 @@
         <plugins>
             <!-- activate the plugin -->
             <plugin>
-                <groupId>io.swagger.codegen.v3</groupId>
-                <artifactId>swagger-codegen-maven-plugin-poc</artifactId>
-                <version>3.0.0</version>
+                <groupId>br.zup.codegen.v3</groupId>
+                <artifactId>swagger-codegen-zup-plugin</artifactId>
+                <version>3.0.21-SNAPSHOT</version>
                 <executions>
                     <execution>
                         <goals>
