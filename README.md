@@ -1,8 +1,8 @@
-swagger-codegen-maven-plugin
+swagger-codegen-zup-plugin
 ============================
 
 A Maven plugin to support the [swagger](http://swagger.io) code generation project
-
+- It's a fork from swagger-codegen-maven-plugin 
 Usage
 ============================
 
@@ -41,6 +41,7 @@ mvn clean compile
 - `language` - target generation language
 - `output` - target output path (default is `${project.build.directory}/generated-sources/swagger`)
 - `templateDirectory` - directory with mustache templates
+- `templateReplacingList` - List of exclusive files you want to use as a mustache template replacement without worrying about the entire template directory
 - `addCompileSourceRoot` - add the output directory to the project as a source root (`true` by default)
 - `modelPackage` - the package to use for generated model objects/classes
 - `apiPackage` - the package to use for generated api objects/classes
@@ -68,8 +69,8 @@ Specifying a custom generator is a bit different. It doesn't support the classpa
 ```xml
 <plugin>
     <groupId>io.swagger.codegen.v3</groupId>
-    <artifactId>swagger-codegen-maven-plugin</artifactId>
-    <version>${swagger-codegen-maven-plugin-version}</version>
+    <artifactId>swagger-codegen-zup-plugin</artifactId>
+    <version>${swagger-codegen-zup-plugin-version}</version>
     <executions>
         <execution>
             <goals>
@@ -85,6 +86,13 @@ Specifying a custom generator is a bit different. It doesn't support the classpa
                 <apiPackage>${default.package}.handler</apiPackage>
                 <modelPackage>${default.package}.model</modelPackage>
                 <invokerPackage>${default.package}.handler</invokerPackage>
+
+
+                <templateReplacingList>
+                    <api.mustache>~/mytemplates/source/api.mustache</api.mustache>
+                    <module.mustache>~/mytemplates/source/module.mustache</module.mustache>
+				</templateReplacingList>
+                
             </configuration>
         </execution>
     </executions>

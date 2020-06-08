@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="Maven: io.swagger:swagger-codegen:2.4.15-SNAPSHOT">
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/io/swagger/swagger-codegen/2.4.15-SNAPSHOT/swagger-codegen-2.4.15-20200605.145338-16.jar!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$MAVEN_REPOSITORY$/io/swagger/swagger-codegen/2.4.15-SNAPSHOT/swagger-codegen-2.4.15-20200605.145338-16-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://$MAVEN_REPOSITORY$/io/swagger/swagger-codegen/2.4.15-SNAPSHOT/swagger-codegen-2.4.15-20200605.145338-16-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>
