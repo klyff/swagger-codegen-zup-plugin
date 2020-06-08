@@ -89,8 +89,8 @@ Specifying a custom generator is a bit different. It doesn't support the classpa
 
 
                 <templateReplacingList>
-                    <api-mustache>~/mytemplates/source/api.mustache</api-mustache>
-                    <module-mustache>~/mytemplates/source/module.mustache</module-mustache>
+                    <api.mustache>~/mytemplates/source/api.mustache</api.mustache>
+                    <module.mustache>~/mytemplates/source/module.mustache</module.mustache>
 				</templateReplacingList>
                 
             </configuration>
